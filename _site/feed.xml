@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Adventures in Digital Design</title>
+    <description>Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC).</description>
+    <link>/</link>
+    <atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
+    <pubDate>Mon, 07 Jul 2014 11:27:15 +0100</pubDate>
+    <lastBuildDate>Mon, 07 Jul 2014 11:27:15 +0100</lastBuildDate>
+    <generator>Jekyll v2.1.0</generator>
+    
+      <item>
+        <title>Generation Random Numbers on an FPGA</title>
+        <description>&lt;p&gt;One of the problems with FPGA’s is that you generally have to create a lot of library functions by hand.&lt;br /&gt;
+For example, random numbers.  If you were writing a C program for a microcontoller you would:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdlib.h&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;and then use something like:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rand&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;and all the generation stuff is handled in the library for you.&lt;/p&gt;
+
+&lt;p&gt;So, how do we generate random numbers on an FPGA and how do we know that they are sufficiently random.&lt;/p&gt;
+
+&lt;p&gt;First, we ar going to generate uniform random numbers.  How do we prove that the numbers we have generated are sufficiently random.&lt;/p&gt;
+
+&lt;p&gt;One fun way is to try and approximate pi by flinging darts randomly at a square.  We then imagine a circle that is drawn so that the 
+circles bounds touch the edge of the square (see the diagram below):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/circle.jpg&quot; alt=&quot;Diagram&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;If the darts thrown are random enough we can count the number of darts that land within the circle versus the ones outside the circle
+and use this to approximate pi:&lt;/p&gt;
+
+&lt;p&gt;The formula for this is:&lt;/p&gt;
+
+&lt;p&gt;area of square: &lt;script type=&quot;math/tex&quot;&gt; 2r * 2r = 4r^2 &lt;/script&gt;&lt;/p&gt;
+
+&lt;p&gt;area of circle: &lt;script type=&quot;math/tex&quot;&gt; \pi r^2 &lt;/script&gt;&lt;/p&gt;
+
+&lt;p&gt;area of circle / area of square = &lt;script type=&quot;math/tex&quot;&gt; (\pi r^2) / (4r^2) = \pi /4 &lt;/script&gt;&lt;/p&gt;
+
+&lt;p&gt;Lets first model this in python:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;random&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;randint&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;math&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sqrt&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;circle_count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;total_count&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;randint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x80000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;randint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x80000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;hyp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hyp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;circle_count&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;approx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;circle_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;total_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;approx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;4.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot; &amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;circle_count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;So, now we have a method of checking the randomness of our random number generator, lets look a the various options.&lt;/p&gt;
+
+&lt;h3 id=&quot;prbs-for-random-number-generation&quot;&gt;1. PRBS For Random Number Generation&lt;/h3&gt;
+&lt;p&gt;The simplest way to generate random numbers is to use a PRBS:
+&lt;img src=&quot;http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence&quot; alt=&quot;link wikipedia&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;which in hardware is a shift register with some feedback elements:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/sr.jpg&quot; alt=&quot;Diagram&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;and in verilog looks like:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;&lt;span class=&quot;k&quot;&gt;always&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;@(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;posedge&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clk&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;posedge&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rst&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rst&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;prbs_out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;&amp;#39;d2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;prbs_out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prbs_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;29&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prbs_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prbs_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;27&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]};&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Firstly its always good to generate a high-level model of what we want to do.  Here is some python that allows us to trade off various 
+random number implementations to see how random they are.  The python code can be found here (under the python directory):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link python&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Next, lets write some verilog for one and see how it performs.  As you can see from the previous code snippit the implementation of the
+PRBS itself is fairly simple, but we will see that theres a fair amount of extra work required for the verilog implementation of the maths 
+required to calculate pi.
+We have to worry about fixed point precision (generally speaking it’s best to keep with fixed point arithmetic for most designs) and also
+we need to figure out how to do a divide operation in hardware.&lt;/p&gt;
+
+&lt;p&gt;For the number representation, since we are generating 31-bit numbers, lets assume that our number representation has:
+1-sign bit, 1 integer bit and 29 fractional bits (s1.29)&lt;/p&gt;
+
+&lt;p&gt;The first thing we need to do is x^2 and y^2, multiplying a 31-bit number with a 31-bit number will give us a 62-bit number output (s1.60).  The best thing
+to do to stop excessive bit growth through the pipeline is to then convert it back to the original format by losing the bottom 31 bits before performing the 
+add.  We can then just look at bit 30 of the add to figure out whether the sum is greater than 1.&lt;/p&gt;
+
+&lt;p&gt;Next, we need to calculate the value of pi by dividing the number of times that the sum is less than 1 by the total number of iterations.  To do
+this we need to figure out how to do a divide in hardware.  The following page:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://www.voidware.com/cordic.htm&quot; alt=&quot;link cordic&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Has quite a lot of useful information about how to use cordic approximations to calculate a lot of useful mathematical functions, one of which is divide.
+I create a hardware version of the cordic divide for this purpose.  This takes in values of 27-bits and outputs a number in
+u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it into a floating point representation we can use:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-verilog&quot; data-lang=&quot;verilog&quot;&gt;&lt;span class=&quot;kt&quot;&gt;real&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pi_real&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;pi_real&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;$itor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pi_out&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;23&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;The entire verilog design and testbench can be found here (under the verilog directory):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link verilog&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;simulation&quot;&gt;Simulation&lt;/h3&gt;
+
+&lt;p&gt;I create a testbench that simply runs the verilog simulation and writes out a .vcd of all the signals in the design.&lt;/p&gt;
+
+&lt;p&gt;To run the simulation yourself, you will need to install both icarus verilog and gtkwave:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://iverilog.icarus.com/home&quot; alt=&quot;link icarus verilog&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;and&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://gtkwave.sourceforge.net/&quot; alt=&quot;link gtkwave&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You can then use the run script in the verilog directory to set off the simulation (source run_sim).&lt;/p&gt;
+
+&lt;h3 id=&quot;timing&quot;&gt;Timing&lt;/h3&gt;
+
+&lt;p&gt;I wrote a c-version of the algorithm so that I can accurately time how long it would take to
+do 1,000,000 iterations of the monte-carlo simulation on a CPU (using the 1.7GHz Intel Core i7 on my Macbook Air).&lt;/p&gt;
+
+&lt;p&gt;(C-code on github, here, under the c directory:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link verilog&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This gives us around 20ms for the simulation.&lt;/p&gt;
+
+&lt;p&gt;For the FPGA version, if we have a clock speed of 100MHz, thats 10ns per calculation (since its all pipelined 
+and after the first value has come out the end of the pipe we get a simulation result every cycle), then we get:&lt;/p&gt;
+
+&lt;p&gt;1,000,000 * 10e-9 = 10ms&lt;/p&gt;
+
+&lt;p&gt;How fast does it really go?&lt;/p&gt;
+
+&lt;p&gt;Without any optimization, quartus reports that the maximum setup failure is 5.57ns, with a clock period of 1ns, giving
+us 6.67ns as our clock period (around 150MHz).&lt;/p&gt;
+
+&lt;p&gt;1,000,000 * 6.67e-9 = 6.67ms&lt;/p&gt;
+
+&lt;p&gt;So currently its just over twice as fast, but we can do a number of things to make it faster:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;We could pipeline the design more (the multipliers are the critical path, we can easily pipeline these).&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;When we make our simulation more complicated (which we will do when we come to look at Black Scholes), the FPGA 
+implementation will still be able to be fully pipelined and give us a value every cycle wheras each iteration of 
+the CPU implementation will be significantly slower.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Next time, we will look at Better random number generators, a hardware version of Mercenne Twister, and hopefully
+get round to looking at a more complicated monte-carlo simulation of the black-scholes equation.&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 06 Jul 2014 22:11:52 +0100</pubDate>
+        <link>/fpga/random/prbs/2014/07/06/welcome-to-jekyll/</link>
+        <guid isPermaLink="true">/fpga/random/prbs/2014/07/06/welcome-to-jekyll/</guid>
+        
+        
+        <category>fpga</category>
+        
+        <category>random</category>
+        
+        <category>prbs</category>
+        
+      </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,10 @@
+# Site settings
+title: Adventures in Digital Design
+email: scott.wilson3@gmail.com
+description: "Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC)."
+baseurl: ""
+github_username:  scottwilson46
+
+# Build settings
+markdown: kramdown
+permalink: pretty

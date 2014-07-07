@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Generation Random Numbers on an FPGA</title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="description" content="Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC).">
+    <link rel="canonical" href="/fpga/random/prbs/2014/07/06/welcome-to-jekyll/">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+
+    <body>
+
+    <header class="site-header">
+
+  <div class="wrap">
+
+    <a class="site-title" href="/">Adventures in Digital Design</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+           viewBox="0 0 18 15" enable-background="new 0 0 18 15" xml:space="preserve">
+          <path fill="#505050" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0
+            h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#505050" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484
+            h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#505050" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0
+            c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+      <div class="trigger">
+        
+          <a class="page-link" href="/about/">About</a>
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrap">
+      <div class="post">
+
+  <script type="text/javascript"
+         src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+
+
+  <header class="post-header">
+    <h1>Generation Random Numbers on an FPGA</h1>
+    <p class="meta">Jul 6, 2014</p>
+  </header>
+
+  <article class="post-content">
+  <p>One of the problems with FPGA’s is that you generally have to create a lot of library functions by hand.<br />
+For example, random numbers.  If you were writing a C program for a microcontoller you would:</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#include &lt;stdlib.h&gt;</span></code></pre></div>
+
+<p>and then use something like:</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="n">rand</span><span class="p">();</span></code></pre></div>
+
+<p>and all the generation stuff is handled in the library for you.</p>
+
+<p>So, how do we generate random numbers on an FPGA and how do we know that they are sufficiently random.</p>
+
+<p>First, we ar going to generate uniform random numbers.  How do we prove that the numbers we have generated are sufficiently random.</p>
+
+<p>One fun way is to try and approximate pi by flinging darts randomly at a square.  We then imagine a circle that is drawn so that the 
+circles bounds touch the edge of the square (see the diagram below):</p>
+
+<p><img src="/assets/circle.jpg" alt="Diagram" /></p>
+
+<p>If the darts thrown are random enough we can count the number of darts that land within the circle versus the ones outside the circle
+and use this to approximate pi:</p>
+
+<p>The formula for this is:</p>
+
+<p>area of square: <script type="math/tex"> 2r * 2r = 4r^2 </script></p>
+
+<p>area of circle: <script type="math/tex"> \pi r^2 </script></p>
+
+<p>area of circle / area of square = <script type="math/tex"> (\pi r^2) / (4r^2) = \pi /4 </script></p>
+
+<p>Lets first model this in python:</p>
+
+<div class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">randint</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
+
+<span class="n">circle_count</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">total_count</span>  <span class="o">=</span> <span class="mi">1000000</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">total_count</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mh">0x80000000</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">31</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mh">0x80000000</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">31</span><span class="p">)</span>
+        <span class="n">hyp</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">hyp</span><span class="o">&lt;=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">circle_count</span><span class="o">+=</span><span class="mi">1</span>
+
+<span class="n">approx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">circle_count</span><span class="p">)</span><span class="o">/</span><span class="nb">float</span><span class="p">(</span><span class="n">total_count</span><span class="p">)</span>
+<span class="k">print</span> <span class="nb">str</span><span class="p">(</span><span class="n">approx</span><span class="o">*</span><span class="mf">4.0</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot; &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">circle_count</span><span class="p">)</span></code></pre></div>
+
+<p>So, now we have a method of checking the randomness of our random number generator, lets look a the various options.</p>
+
+<h3 id="prbs-for-random-number-generation">1. PRBS For Random Number Generation</h3>
+<p>The simplest way to generate random numbers is to use a PRBS:
+<img src="http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence" alt="link wikipedia" /></p>
+
+<p>which in hardware is a shift register with some feedback elements:</p>
+
+<p><img src="/assets/sr.jpg" alt="Diagram" /></p>
+
+<p>and in verilog looks like:</p>
+
+<div class="highlight"><pre><code class="language-verilog" data-lang="verilog"><span class="k">always</span> <span class="p">@(</span><span class="k">posedge</span> <span class="n">clk</span> <span class="k">or</span> <span class="k">posedge</span> <span class="n">rst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rst</span><span class="p">)</span>
+        <span class="n">prbs_out</span> <span class="o">&lt;=</span> <span class="mi">&#39;d2</span><span class="p">;</span>
+    <span class="k">else</span>
+        <span class="n">prbs_out</span> <span class="o">&lt;=</span> <span class="p">{</span><span class="n">prbs_out</span><span class="p">[</span><span class="mh">29</span><span class="o">:</span><span class="mh">0</span><span class="p">],</span> <span class="n">prbs_out</span><span class="p">[</span><span class="mh">30</span><span class="p">]</span><span class="o">^</span><span class="n">prbs_out</span><span class="p">[</span><span class="mh">27</span><span class="p">]};</span></code></pre></div>
+
+<p>Firstly its always good to generate a high-level model of what we want to do.  Here is some python that allows us to trade off various 
+random number implementations to see how random they are.  The python code can be found here (under the python directory):</p>
+
+<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link python" /></p>
+
+<p>Next, lets write some verilog for one and see how it performs.  As you can see from the previous code snippit the implementation of the
+PRBS itself is fairly simple, but we will see that theres a fair amount of extra work required for the verilog implementation of the maths 
+required to calculate pi.
+We have to worry about fixed point precision (generally speaking it’s best to keep with fixed point arithmetic for most designs) and also
+we need to figure out how to do a divide operation in hardware.</p>
+
+<p>For the number representation, since we are generating 31-bit numbers, lets assume that our number representation has:
+1-sign bit, 1 integer bit and 29 fractional bits (s1.29)</p>
+
+<p>The first thing we need to do is x^2 and y^2, multiplying a 31-bit number with a 31-bit number will give us a 62-bit number output (s1.60).  The best thing
+to do to stop excessive bit growth through the pipeline is to then convert it back to the original format by losing the bottom 31 bits before performing the 
+add.  We can then just look at bit 30 of the add to figure out whether the sum is greater than 1.</p>
+
+<p>Next, we need to calculate the value of pi by dividing the number of times that the sum is less than 1 by the total number of iterations.  To do
+this we need to figure out how to do a divide in hardware.  The following page:</p>
+
+<p><img src="http://www.voidware.com/cordic.htm" alt="link cordic" /></p>
+
+<p>Has quite a lot of useful information about how to use cordic approximations to calculate a lot of useful mathematical functions, one of which is divide.
+I create a hardware version of the cordic divide for this purpose.  This takes in values of 27-bits and outputs a number in
+u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it into a floating point representation we can use:</p>
+
+<div class="highlight"><pre><code class="language-verilog" data-lang="verilog"><span class="kt">real</span> <span class="n">pi_real</span><span class="p">;</span>
+<span class="n">pi_real</span> <span class="o">=</span> <span class="p">(</span><span class="nb">$itor</span><span class="p">(</span><span class="n">pi_out</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mh">2</span><span class="o">**</span><span class="mh">23</span><span class="p">);</span></code></pre></div>
+
+<p>The entire verilog design and testbench can be found here (under the verilog directory):</p>
+
+<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link verilog" /></p>
+
+<h3 id="simulation">Simulation</h3>
+
+<p>I create a testbench that simply runs the verilog simulation and writes out a .vcd of all the signals in the design.</p>
+
+<p>To run the simulation yourself, you will need to install both icarus verilog and gtkwave:</p>
+
+<p><img src="http://iverilog.icarus.com/home" alt="link icarus verilog" /></p>
+
+<p>and</p>
+
+<p><img src="http://gtkwave.sourceforge.net/" alt="link gtkwave" /></p>
+
+<p>You can then use the run script in the verilog directory to set off the simulation (source run_sim).</p>
+
+<h3 id="timing">Timing</h3>
+
+<p>I wrote a c-version of the algorithm so that I can accurately time how long it would take to
+do 1,000,000 iterations of the monte-carlo simulation on a CPU (using the 1.7GHz Intel Core i7 on my Macbook Air).</p>
+
+<p>(C-code on github, here, under the c directory:</p>
+
+<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link verilog" /></p>
+
+<p>This gives us around 20ms for the simulation.</p>
+
+<p>For the FPGA version, if we have a clock speed of 100MHz, thats 10ns per calculation (since its all pipelined 
+and after the first value has come out the end of the pipe we get a simulation result every cycle), then we get:</p>
+
+<p>1,000,000 * 10e-9 = 10ms</p>
+
+<p>How fast does it really go?</p>
+
+<p>Without any optimization, quartus reports that the maximum setup failure is 5.57ns, with a clock period of 1ns, giving
+us 6.67ns as our clock period (around 150MHz).</p>
+
+<p>1,000,000 * 6.67e-9 = 6.67ms</p>
+
+<p>So currently its just over twice as fast, but we can do a number of things to make it faster:</p>
+
+<ol>
+  <li>
+    <p>We could pipeline the design more (the multipliers are the critical path, we can easily pipeline these).</p>
+  </li>
+  <li>
+    <p>When we make our simulation more complicated (which we will do when we come to look at Black Scholes), the FPGA 
+implementation will still be able to be fully pipelined and give us a value every cycle wheras each iteration of 
+the CPU implementation will be significantly slower.</p>
+  </li>
+</ol>
+
+<p>Next time, we will look at Better random number generators, a hardware version of Mercenne Twister, and hopefully
+get round to looking at a more complicated monte-carlo simulation of the black-scholes equation.</p>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrap">
+
+    <h2 class="footer-heading">Adventures in Digital Design</h2>
+
+    <div class="footer-col-1 column">
+      <ul>
+        <li>Adventures in Digital Design</li>
+        <li><a href="mailto:scott.wilson3@gmail.com">scott.wilson3@gmail.com</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col-2 column">
+      <ul>
+        <li>
+          <a href="https://github.com/scottwilson46">
+            <span class="icon github">
+              <svg version="1.1" class="github-icon-svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 16 16" enable-background="new 0 0 16 16" xml:space="preserve">
+                <path fill-rule="evenodd" clip-rule="evenodd" fill="#C2C2C2" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761
+                c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32
+                c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472
+                c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037
+                C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65
+                c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261
+                c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082
+                c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129
+                c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+              </svg>
+            </span>
+            <span class="username">scottwilson46</span>
+          </a>
+        </li>
+        
+      </ul>
+    </div>
+
+    <div class="footer-col-3 column">
+      <p class="text">Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC).</p>
+    </div>
+
+  </div>
+
+</footer>
+
+
+    </body>
+</html>
