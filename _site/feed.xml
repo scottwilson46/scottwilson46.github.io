@@ -5,8 +5,8 @@
     <description>Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC).</description>
     <link>/</link>
     <atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
-    <pubDate>Mon, 07 Jul 2014 11:27:15 +0100</pubDate>
-    <lastBuildDate>Mon, 07 Jul 2014 11:27:15 +0100</lastBuildDate>
+    <pubDate>Mon, 07 Jul 2014 11:35:56 +0100</pubDate>
+    <lastBuildDate>Mon, 07 Jul 2014 11:35:56 +0100</lastBuildDate>
     <generator>Jekyll v2.1.0</generator>
     
       <item>
@@ -63,7 +63,7 @@ and use this to approximate pi:&lt;/p&gt;
 
 &lt;h3 id=&quot;prbs-for-random-number-generation&quot;&gt;1. PRBS For Random Number Generation&lt;/h3&gt;
 &lt;p&gt;The simplest way to generate random numbers is to use a PRBS:
-&lt;img src=&quot;http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence&quot; alt=&quot;link wikipedia&quot; /&gt;&lt;/p&gt;
+&lt;a href=&quot;http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence&quot;&gt;http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;which in hardware is a shift register with some feedback elements:&lt;/p&gt;
 
@@ -80,7 +80,7 @@ and use this to approximate pi:&lt;/p&gt;
 &lt;p&gt;Firstly its always good to generate a high-level model of what we want to do.  Here is some python that allows us to trade off various 
 random number implementations to see how random they are.  The python code can be found here (under the python directory):&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link python&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://github.com/scottwilson46/FPGARandom&quot;&gt;http://github.com/scottwilson46/FPGARandom&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;Next, lets write some verilog for one and see how it performs.  As you can see from the previous code snippit the implementation of the
 PRBS itself is fairly simple, but we will see that theres a fair amount of extra work required for the verilog implementation of the maths 
@@ -98,7 +98,7 @@ add.  We can then just look at bit 30 of the add to figure out whether the sum i
 &lt;p&gt;Next, we need to calculate the value of pi by dividing the number of times that the sum is less than 1 by the total number of iterations.  To do
 this we need to figure out how to do a divide in hardware.  The following page:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://www.voidware.com/cordic.htm&quot; alt=&quot;link cordic&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://www.voidware.com/cordic.htm&quot;&gt;http://www.voidware.com/cordic.htm&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;Has quite a lot of useful information about how to use cordic approximations to calculate a lot of useful mathematical functions, one of which is divide.
 I create a hardware version of the cordic divide for this purpose.  This takes in values of 27-bits and outputs a number in
@@ -109,7 +109,7 @@ u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it in
 
 &lt;p&gt;The entire verilog design and testbench can be found here (under the verilog directory):&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link verilog&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://github.com/scottwilson46/FPGARandom&quot;&gt;http://github.com/scottwilson46/FPGARandom&lt;/a&gt;&lt;/p&gt;
 
 &lt;h3 id=&quot;simulation&quot;&gt;Simulation&lt;/h3&gt;
 
@@ -117,11 +117,11 @@ u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it in
 
 &lt;p&gt;To run the simulation yourself, you will need to install both icarus verilog and gtkwave:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://iverilog.icarus.com/home&quot; alt=&quot;link icarus verilog&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://iverilog.icarus.com/home&quot;&gt;http://iverilog.icarus.com/home&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;and&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://gtkwave.sourceforge.net/&quot; alt=&quot;link gtkwave&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://gtkwave.sourceforge.net/&quot;&gt;http://gtkwave.sourceforge.net/&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;You can then use the run script in the verilog directory to set off the simulation (source run_sim).&lt;/p&gt;
 
@@ -132,7 +132,7 @@ do 1,000,000 iterations of the monte-carlo simulation on a CPU (using the 1.7GHz
 
 &lt;p&gt;(C-code on github, here, under the c directory:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://github.com/scottwilson46/FPGARandom&quot; alt=&quot;link verilog&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://github.com/scottwilson46/FPGARandom&quot;&gt;http://github.com/scottwilson46/FPGARandom&lt;/a&gt;&lt;/p&gt;
 
 &lt;p&gt;This gives us around 20ms for the simulation.&lt;/p&gt;
 
@@ -166,8 +166,8 @@ get round to looking at a more complicated monte-carlo simulation of the black-s
 
 </description>
         <pubDate>Sun, 06 Jul 2014 22:11:52 +0100</pubDate>
-        <link>/fpga/random/prbs/2014/07/06/welcome-to-jekyll/</link>
-        <guid isPermaLink="true">/fpga/random/prbs/2014/07/06/welcome-to-jekyll/</guid>
+        <link>/fpga/random/prbs/2014/07/06/fpga-random-prbs/</link>
+        <guid isPermaLink="true">/fpga/random/prbs/2014/07/06/fpga-random-prbs/</guid>
         
         
         <category>fpga</category>

@@ -64,7 +64,7 @@ So, now we have a method of checking the randomness of our random number generat
 
 ### 1. PRBS For Random Number Generation
 The simplest way to generate random numbers is to use a PRBS:
-![link wikipedia](http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence)
+<http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence>
 
 which in hardware is a shift register with some feedback elements:
 
@@ -84,7 +84,7 @@ always @(posedge clk or posedge rst)
 Firstly its always good to generate a high-level model of what we want to do.  Here is some python that allows us to trade off various 
 random number implementations to see how random they are.  The python code can be found here (under the python directory):
 
-![link python](http://github.com/scottwilson46/FPGARandom)
+<http://github.com/scottwilson46/FPGARandom>
 
 Next, lets write some verilog for one and see how it performs.  As you can see from the previous code snippit the implementation of the
 PRBS itself is fairly simple, but we will see that theres a fair amount of extra work required for the verilog implementation of the maths 
@@ -102,7 +102,7 @@ add.  We can then just look at bit 30 of the add to figure out whether the sum i
 Next, we need to calculate the value of pi by dividing the number of times that the sum is less than 1 by the total number of iterations.  To do
 this we need to figure out how to do a divide in hardware.  The following page:
 
-![link cordic](http://www.voidware.com/cordic.htm)
+<http://www.voidware.com/cordic.htm>
 
 Has quite a lot of useful information about how to use cordic approximations to calculate a lot of useful mathematical functions, one of which is divide.
 I create a hardware version of the cordic divide for this purpose.  This takes in values of 27-bits and outputs a number in
@@ -116,7 +116,7 @@ pi_real = ($itor(pi_out)) / (2**23);
 
 The entire verilog design and testbench can be found here (under the verilog directory):
 
-![link verilog](http://github.com/scottwilson46/FPGARandom)
+<http://github.com/scottwilson46/FPGARandom>
 
 ### Simulation
 
@@ -124,11 +124,11 @@ I create a testbench that simply runs the verilog simulation and writes out a .v
 
 To run the simulation yourself, you will need to install both icarus verilog and gtkwave:
 
-![link icarus verilog](http://iverilog.icarus.com/home)
+<http://iverilog.icarus.com/home>
 
 and
 
-![link gtkwave](http://gtkwave.sourceforge.net/)
+<http://gtkwave.sourceforge.net/>
 
 You can then use the run script in the verilog directory to set off the simulation (source run_sim).
 
@@ -139,7 +139,7 @@ do 1,000,000 iterations of the monte-carlo simulation on a CPU (using the 1.7GHz
 
 (C-code on github, here, under the c directory:
 
-![link verilog](http://github.com/scottwilson46/FPGARandom)
+<http://github.com/scottwilson46/FPGARandom>
 
 This gives us around 20ms for the simulation.
 

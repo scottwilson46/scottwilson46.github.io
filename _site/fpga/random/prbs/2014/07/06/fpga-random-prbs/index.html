@@ -7,7 +7,7 @@
     <title>Generation Random Numbers on an FPGA</title>
     <meta name="viewport" content="width=device-width">
     <meta name="description" content="Hopefully useful blog posts about various topics that interest me in Digital Design (for both FPGA/ASIC).">
-    <link rel="canonical" href="/fpga/random/prbs/2014/07/06/welcome-to-jekyll/">
+    <link rel="canonical" href="/fpga/random/prbs/2014/07/06/fpga-random-prbs/">
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/main.css">
@@ -36,8 +36,6 @@
         </svg>
       </a>
       <div class="trigger">
-        
-          <a class="page-link" href="/about/">About</a>
         
           
         
@@ -118,7 +116,7 @@ and use this to approximate pi:</p>
 
 <h3 id="prbs-for-random-number-generation">1. PRBS For Random Number Generation</h3>
 <p>The simplest way to generate random numbers is to use a PRBS:
-<img src="http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence" alt="link wikipedia" /></p>
+<a href="http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence">http://en.wikipedia.org/wiki/Pseudorandom_binary_sequence</a></p>
 
 <p>which in hardware is a shift register with some feedback elements:</p>
 
@@ -135,7 +133,7 @@ and use this to approximate pi:</p>
 <p>Firstly its always good to generate a high-level model of what we want to do.  Here is some python that allows us to trade off various 
 random number implementations to see how random they are.  The python code can be found here (under the python directory):</p>
 
-<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link python" /></p>
+<p><a href="http://github.com/scottwilson46/FPGARandom">http://github.com/scottwilson46/FPGARandom</a></p>
 
 <p>Next, lets write some verilog for one and see how it performs.  As you can see from the previous code snippit the implementation of the
 PRBS itself is fairly simple, but we will see that theres a fair amount of extra work required for the verilog implementation of the maths 
@@ -153,7 +151,7 @@ add.  We can then just look at bit 30 of the add to figure out whether the sum i
 <p>Next, we need to calculate the value of pi by dividing the number of times that the sum is less than 1 by the total number of iterations.  To do
 this we need to figure out how to do a divide in hardware.  The following page:</p>
 
-<p><img src="http://www.voidware.com/cordic.htm" alt="link cordic" /></p>
+<p><a href="http://www.voidware.com/cordic.htm">http://www.voidware.com/cordic.htm</a></p>
 
 <p>Has quite a lot of useful information about how to use cordic approximations to calculate a lot of useful mathematical functions, one of which is divide.
 I create a hardware version of the cordic divide for this purpose.  This takes in values of 27-bits and outputs a number in
@@ -164,7 +162,7 @@ u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it in
 
 <p>The entire verilog design and testbench can be found here (under the verilog directory):</p>
 
-<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link verilog" /></p>
+<p><a href="http://github.com/scottwilson46/FPGARandom">http://github.com/scottwilson46/FPGARandom</a></p>
 
 <h3 id="simulation">Simulation</h3>
 
@@ -172,11 +170,11 @@ u4.23 format.  Multiplying by 4 will convert it to u6.23 format and to get it in
 
 <p>To run the simulation yourself, you will need to install both icarus verilog and gtkwave:</p>
 
-<p><img src="http://iverilog.icarus.com/home" alt="link icarus verilog" /></p>
+<p><a href="http://iverilog.icarus.com/home">http://iverilog.icarus.com/home</a></p>
 
 <p>and</p>
 
-<p><img src="http://gtkwave.sourceforge.net/" alt="link gtkwave" /></p>
+<p><a href="http://gtkwave.sourceforge.net/">http://gtkwave.sourceforge.net/</a></p>
 
 <p>You can then use the run script in the verilog directory to set off the simulation (source run_sim).</p>
 
@@ -187,7 +185,7 @@ do 1,000,000 iterations of the monte-carlo simulation on a CPU (using the 1.7GHz
 
 <p>(C-code on github, here, under the c directory:</p>
 
-<p><img src="http://github.com/scottwilson46/FPGARandom" alt="link verilog" /></p>
+<p><a href="http://github.com/scottwilson46/FPGARandom">http://github.com/scottwilson46/FPGARandom</a></p>
 
 <p>This gives us around 20ms for the simulation.</p>
 
