@@ -72,4 +72,19 @@ THis would give us (assuming 1 iteration every 3 cycles):
 So the FPGA implementation is still faster, however it could be made faster still by pipelining the initialization part of the algorithm because
 thats the only bit that uses multipliers.  
 
+Added bonus:
+
+Another pretty good uniform random number generator is the Tausworth Generator.  I created some verilog code for this too (in the same repo).
+The advantage of this method is it is a lot less comutationally complex than using Mercenne Twister so the FPGA can again run at increased 
+frequency and it generates a new random number every cycle so the speed for 1,000,000 iterations would be:
+
+1/150e6 * 1e6 * 1e3 = 6.7ms
+
+I also did a software version of this too (in the c directory which took 28ms to run so again the FPGA version is over 4 times faster.
+
+
+
+
+
+
 
